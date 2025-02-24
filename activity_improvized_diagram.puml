@@ -1,0 +1,80 @@
+@startuml
+|NotificationPreferences|
+|UserProfile|
+|LoginView|
+start
+:Receive registration button click;
+:readUsernameTextbox();
+:readPasswordTextbox();
+:readEmailTextbox();
+:readNotificationPreferences();
+:Create NotificationPreferences object;
+|NotificationPreferences|
+:NotificationPreferences(frequency: NotificationFrequency, isEnabled: bool);
+|LoginView|
+:Create UserProfile object;
+|UserProfile|
+:UserProfile(username: string, email: string, notificationPreferences: NotificationPreferences);
+
+|LoginView|
+
+:registerUser(userProfile: UserProfile, password: string);
+
+|AuthenticationManager|
+:validateUsername(username: string);
+if (username is invalid) then (Yes)
+|LoginView|
+    :displayError("Username must use only letters");
+    :Return RegistrationStatus.INVALID_USERNAME;
+    stop
+else (No)
+endif
+|AuthenticationManager|
+
+:validatePassword(password: string);
+if (password is invalid) then (Yes)
+|LoginView|
+    :displayError("Password must be at least 8 characters long");
+    :Return RegistrationStatus.INVALID_PASSWORD;
+    stop
+else (No)
+endif
+
+:hashPassword();
+
+:validateEmail(email: string);
+if (email is invalid) then (Yes)
+|LoginView|
+    :displayError("Invalid email address");
+    :Return RegistrationStatus.INVALID_EMAIL;
+    stop
+else (No)
+endif
+|AuthenticationManager|
+
+:saveNewUser(userProfile: UserProfile, password: string);
+
+|UserStorageManager|
+:findUserByUsername(username: string);
+if (user found) then (Yes)
+|AuthenticationManager|
+    :Return RegistrationStatus.USER_ALREADY_EXISTS;
+|LoginView|
+    :displayError("Username already exists");
+    stop
+else (No)
+|UserStorageManager|
+:saveUserToDatabase(userProfile: UserProfile);
+|AuthenticationManager|
+if (save successful) then (Yes)
+    :Return RegistrationStatus.SUCCESS;
+|LoginView|
+    :transitionToHomeView(userProfile: UserProfile);
+    stop
+else (No)
+    :Return RegistrationStatus.UNKNOWN_ERROR;
+|LoginView|
+    :displayError("Registration failed. Internal error");
+    stop
+endif
+@enduml
